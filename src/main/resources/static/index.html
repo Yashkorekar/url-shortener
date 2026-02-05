@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            color: #333;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+
+        .short-url-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .short-url-display a {
+            color: #667eea;
+            text-decoration: none;
+            flex: 1;
+        }
+
+        .short-url-display a:hover {
+            text-decoration: underline;
+        }
+
+        .copy-btn {
+            padding: 8px 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: auto;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .copy-btn.copied {
+            background: #5cb85c;
+        }
+
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 10px;
+            color: #721c24;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .stats-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .stats-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stats-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stats-input-group input {
+            flex: 1;
+        }
+
+        .stats-input-group button {
+            width: auto;
+            padding: 15px 30px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .metrics-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .metrics-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .metrics-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .metrics-table th,
+        .metrics-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .metrics-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        .metrics-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .metrics-btn {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .domain-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .count-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #28a745;
+            color: white;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 URL Shortener</h1>
+        <p class="subtitle">Make your long URLs short and shareable!</p>
+
+        <form id="shortenForm">
+            <div class="input-group">
+                <label for="longUrl">Enter your long URL:</label>
+                <input
+                    type="text"
+                    id="longUrl"
+                    name="longUrl"
+                    placeholder="https://www.example.com/very/long/url/path"
+                    required
+                >
+            </div>
+            <button type="submit" id="shortenBtn">Shorten URL</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <p>⏳ Shortening your URL...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <h3>✅ Success! Your URL has been shortened</h3>
+            <div class="result-item">
+                <span class="result-label">Original URL:</span>
+                <span class="result-value" id="originalUrl"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Short URL:</span>
+                <div class="short-url-display">
+                    <a href="#" id="shortUrl" target="_blank"></a>
+                    <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()">Copy</button>
+                </div>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Short Code:</span>
+                <span class="result-value" id="shortCode"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Created:</span>
+                <span class="result-value" id="createdAt"></span>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <h2>📊 Check URL Statistics</h2>
+            <div class="stats-input-group">
+                <input
+                    type="text"
+                    id="statsCode"
+                    placeholder="Enter short code (e.g., abc123)"
+                >
+                <button onclick="getStats()">Get Stats</button>
+            </div>
+            <div class="result" id="statsResult">
+                <h3>📈 URL Statistics</h3>
+                <div class="result-item">
+                    <span class="result-label">Short Code:</span>
+                    <span class="result-value" id="statsShortCode"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Original URL:</span>
+                    <span class="result-value" id="statsLongUrl"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Access Count:</span>
+                    <span class="result-value" id="statsAccessCount"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Created:</span>
+                    <span class="result-value" id="statsCreatedAt"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metrics-section">
+            <h2>📊 Top 3 Most Shortened Domains</h2>
+            <button class="metrics-btn" onclick="getMetrics()">Load Domain Metrics</button>
+            <div id="metricsResult" style="display: none;">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Domain</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metricsTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div id="noMetrics" style="display: none; text-align: center; padding: 20px; color: #666;">
+                <p>No URLs have been shortened yet. Start shortening some URLs to see metrics!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8082';
+
+        // Handle form submission
+        document.getElementById('shortenForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const longUrl = document.getElementById('longUrl').value.trim();
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const error = document.getElementById('error');
+            const shortenBtn = document.getElementById('shortenBtn');
+
+            // Validate URL format
+            if (!longUrl.startsWith('http://') && !longUrl.startsWith('https://')) {
+                showError('URL must start with http:// or https://');
+                return;
+            }
+
+            // Hide previous results
+            result.classList.remove('show');
+            error.classList.remove('show');
+            loading.classList.add('show');
+            shortenBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/shorten`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: longUrl })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to shorten URL');
+                }
+
+                const data = await response.json();
+
+                // Display results
+                document.getElementById('originalUrl').textContent = data.longUrl;
+                document.getElementById('shortUrl').textContent = data.shortUrl;
+                document.getElementById('shortUrl').href = data.shortUrl;
+                document.getElementById('shortCode').textContent = data.shortCode;
+                document.getElementById('createdAt').textContent = new Date(data.createdAt).toLocaleString();
+
+                result.classList.add('show');
+
+                // Clear the input
+                document.getElementById('longUrl').value = '';
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                loading.classList.remove('show');
+                shortenBtn.disabled = false;
+            }
+        });
+
+        // Get statistics
+        async function getStats() {
+            const shortCode = document.getElementById('statsCode').value.trim();
+            const statsResult = document.getElementById('statsResult');
+            const error = document.getElementById('error');
+
+            if (!shortCode) {
+                showError('Please enter a short code');
+                return;
+            }
+
+            statsResult.classList.remove('show');
+            error.classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/stats/${shortCode}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Short code not found');
+                    }
+                    throw new Error('Failed to fetch statistics');
+                }
+
+                const data = await response.json();
+
+                document.getElementById('statsShortCode').textContent = data.shortCode;
+                document.getElementById('statsLongUrl').textContent = data.longUrl;
+                document.getElementById('statsAccessCount').textContent = data.accessCount;
+                document.getElementById('statsCreatedAt').textContent = new Date(data.createdAt).toLocaleString();
+
+                statsResult.classList.add('show');
+
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        // Get domain metrics
+        async function getMetrics() {
+            const metricsResult = document.getElementById('metricsResult');
+            const noMetrics = document.getElementById('noMetrics');
+            const metricsTableBody = document.getElementById('metricsTableBody');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/metrics/domains`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch metrics');
+                }
+
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    metricsResult.style.display = 'none';
+                    noMetrics.style.display = 'block';
+                    return;
+                }
+
+                // Clear previous data
+                metricsTableBody.innerHTML = '';
+
+                // Populate table
+                data.forEach((metric, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${index + 1}</strong></td>
+                        <td><span class="domain-badge">${metric.domain}</span></td>
+                        <td><span class="count-badge">${metric.count}</span></td>
+                    `;
+                    metricsTableBody.appendChild(row);
+                });
+
+                metricsResult.style.display = 'block';
+                noMetrics.style.display = 'none';
+
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        // Copy to clipboard
+        function copyToClipboard() {
+            const shortUrl = document.getElementById('shortUrl').textContent;
+            const copyBtn = document.getElementById('copyBtn');
+
+            navigator.clipboard.writeText(shortUrl).then(() => {
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                showError('Failed to copy to clipboard');
+            });
+        }
+
+        // Show error message
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = '❌ ' + message;
+            error.classList.add('show');
+
+            setTimeout(() => {
+                error.classList.remove('show');
+            }, 5000);
+        }
+
+        // Allow Enter key in stats input
+        document.getElementById('statsCode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                getStats();
+            }
+        });
+    </script>
+</body>
+</html>
