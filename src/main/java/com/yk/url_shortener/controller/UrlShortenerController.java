@@ -1,5 +1,6 @@
 package com.yk.url_shortener.controller;
 
+import com.yk.url_shortener.dto.DomainMetrics;
 import com.yk.url_shortener.dto.ShortenUrlRequest;
 import com.yk.url_shortener.dto.ShortenUrlResponse;
 import com.yk.url_shortener.dto.UrlStatsResponse;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -117,5 +119,25 @@ public class UrlShortenerController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint to get domain metrics - top 3 domains that have been shortened the most
+     *
+     * GET /api/metrics/domains
+     * Response: [
+     *   {"domain": "udemy.com", "count": 6},
+     *   {"domain": "youtube.com", "count": 4},
+     *   {"domain": "wikipedia.org", "count": 2}
+     * ]
+     *
+     * This returns the top 3 domain names that have been shortened the most number of times.
+     *
+     * @return List of top 3 domains with their counts
+     */
+    @GetMapping("/api/metrics/domains")
+    public ResponseEntity<List<DomainMetrics>> getTopDomains() {
+        List<DomainMetrics> topDomains = urlShortenerService.getTop3Domains();
+        return ResponseEntity.ok(topDomains);
     }
 }
