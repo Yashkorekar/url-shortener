@@ -1,0 +1,16 @@
+# Ignore files that shouldn't be copied to Docker image
+target/
+.git/
+.gitignore
+*.md
+!README.md
+.mvn/
+*.jar
+*.war
+*.class
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+*.iml
