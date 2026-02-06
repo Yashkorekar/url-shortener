@@ -1,17 +1,23 @@
 package com.yk.url_shortener.service;
 
+import com.yk.url_shortener.dto.DomainMetrics;
 import com.yk.url_shortener.model.Url;
 import com.yk.url_shortener.repository.UrlRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -145,5 +151,79 @@ public class UrlShortenerService {
      */
     public String buildShortUrl(String shortCode) {
         return baseUrl + "/" + shortCode;
+    }
+
+    /**
+     * Extract domain name from a URL
+     *
+     * Examples:
+     * - https://www.youtube.com/watch?v=abc -> youtube.com
+     * - https://stackoverflow.com/questions/123 -> stackoverflow.com
+     * - https://en.wikipedia.org/wiki/Java -> wikipedia.org
+     * - https://www.udemy.com/course/java -> udemy.com
+     *
+     * @param url The full URL
+     * @return The domain name (without www.)
+     */
+    private String extractDomain(String url) {
+        try {
+            URI uri = new URI(url);
+            String host = uri.getHost();
+
+            if (host == null) {
+                return "unknown";
+            }
+
+            // Remove "www." prefix if present
+            if (host.startsWith("www.")) {
+                host = host.substring(4);
+            }
+
+            return host;
+
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /**
+     * Get top 3 domains that have been shortened the most
+     *
+     * Algorithm:
+     * 1. Get all URLs from repository
+     * 2. Extract domain from each URL
+     * 3. Count occurrences of each domain
+     * 4. Sort by count in descending order
+     * 5. Take top 3
+     *
+     * Example output:
+     * [
+     *   { "domain": "udemy.com", "count": 6 },
+     *   { "domain": "youtube.com", "count": 4 },
+     *   { "domain": "wikipedia.org", "count": 2 }
+     * ]
+     *
+     * @return List of top 3 domains with their counts
+     */
+    public List<DomainMetrics> getTop3Domains() {
+        Collection<Url> allUrls = urlRepository.findAll();
+
+        // Count occurrences of each domain
+        Map<String, Long> domainCounts = allUrls.stream()
+                .map(url -> extractDomain(url.getLongUrl()))
+                .collect(Collectors.groupingBy(
+                        domain -> domain,
+                        Collectors.counting()
+                ));
+
+        // Convert to DomainMetrics objects, sort by count descending, and take top 3
+        return domainCounts.entrySet().stream()
+                .map(entry -> DomainMetrics.builder()
+                        .domain(entry.getKey())
+                        .count(entry.getValue())
+                        .build())
+                .sorted((a, b) -> Long.compare(b.getCount(), a.getCount())) // Sort descending
+                .limit(3) // Take top 3
+                .collect(Collectors.toList());
     }
 }

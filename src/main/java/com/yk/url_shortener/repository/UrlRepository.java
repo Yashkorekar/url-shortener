@@ -59,4 +59,13 @@ public class UrlRepository {
                 .filter(url -> url.getLongUrl().equals(longUrl))
                 .findFirst();
     }
+
+    /**
+     * Get all stored URLs
+     * Used for metrics calculation
+     * @return Collection of all URL objects
+     */
+    public java.util.Collection<Url> findAll() {
+        return urlStorage.values();
+    }
 }
