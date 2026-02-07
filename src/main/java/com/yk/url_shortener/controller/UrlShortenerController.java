@@ -18,6 +18,7 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class UrlShortenerController {
 
     private final UrlShortenerService urlShortenerService;
