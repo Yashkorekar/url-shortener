@@ -16,10 +16,10 @@ Prerequisites: Docker installed
 
 ```bash
 docker pull yashkorekar/url-shortener:latest
-docker run -p 8082:8082 yashkorekar/url-shortener:latest
+docker run -p 8081:8081 yashkorekar/url-shortener:latest
 ```
 
-Access at http://localhost:8082
+Access at http://localhost:8081
 
 ## Running Locally
 
@@ -29,11 +29,11 @@ Prerequisites: Java 17
 ./mvnw spring-boot:run
 ```
 
-Application runs on http://localhost:8082
+Application runs on http://localhost:8081
 
 ## Usage
 
-Open http://localhost:8082 in browser. Paste a long URL and click Shorten.
+Open http://localhost:8081 in browser. Paste a long URL and click Shorten.
 
 ## API Endpoints
 
@@ -52,7 +52,7 @@ Response:
 {
   "longUrl": "https://www.example.com/very/long/url",
   "shortCode": "abc123",
-  "shortUrl": "http://localhost:8082/abc123"
+  "shortUrl": "http://localhost:8081/abc123"
 }
 ```
 
