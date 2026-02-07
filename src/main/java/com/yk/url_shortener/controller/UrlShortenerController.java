@@ -6,34 +6,65 @@ import com.yk.url_shortener.dto.ShortenUrlResponse;
 import com.yk.url_shortener.dto.UrlStatsResponse;
 import com.yk.url_shortener.model.Url;
 import com.yk.url_shortener.service.UrlShortenerService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "URL Shortener", description = "APIs for URL shortening, redirection, and analytics")
 public class UrlShortenerController {
 
     private final UrlShortenerService urlShortenerService;
 
-    /**
-     * Endpoint to shorten a URL
-     *
-     * POST /api/shorten
-     * Request Body: {"url": "https://www.example.com/very/long/url"}
-     * Response: {"longUrl": "...", "shortCode": "abc123", "shortUrl": "http://localhost:8082/abc123", ...}
-     *
-     * @param request The request containing the long URL
-     * @return Response with the shortened URL details
-     */
+    @Operation(
+        summary = "Shorten a URL",
+        description = "Takes a long URL and returns a shortened version. If the URL was previously shortened, returns the existing short code instead of creating a new one."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "URL successfully shortened",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ShortenUrlResponse.class),
+                examples = @ExampleObject(
+                    value = "{\"longUrl\":\"https://www.example.com/very/long/url\",\"shortCode\":\"xY7zK3m\",\"shortUrl\":\"http://localhost:8081/xY7zK3m\",\"createdAt\":\"2026-02-07T19:30:00\"}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid URL format or validation error",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE)
+        )
+    })
     @PostMapping("/api/shorten")
-    public ResponseEntity<ShortenUrlResponse> shortenUrl(@Valid @RequestBody ShortenUrlRequest request) {
+    public ResponseEntity<ShortenUrlResponse> shortenUrl(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "URL to be shortened",
+                required = true,
+                content = @Content(
+                    examples = @ExampleObject(
+                        value = "{\"url\":\"https://www.example.com/very/long/url/path\"}"
+                    )
+                )
+            )
+            @Valid @RequestBody ShortenUrlRequest request) {
 
         Url url = urlShortenerService.shortenUrl(request.getUrl());
 
@@ -47,28 +78,35 @@ public class UrlShortenerController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    /**
-     * Endpoint to redirect short URL to original URL
-     *
-     * GET /{shortCode}
-     * Example: GET /abc123
-     * Response: HTTP 302 Redirect to the original URL
-     *
-     * This is the main functionality - when someone visits the short URL,
-     * they get redirected to the original long URL.
-     *
-     * The regex pattern ensures we only match short codes (alphanumeric),
-     * not file paths like index.html or paths with dots/slashes
-     *
-     * @param shortCode The short code from the URL path
-     * @return RedirectView that redirects the browser or 404 if not found
-     */
+    @Operation(
+        summary = "Redirect to original URL",
+        description = "Redirects from a short code to the original long URL. Also increments the access counter.",
+        parameters = @Parameter(
+            name = "shortCode",
+            description = "The 7-character short code",
+            example = "xY7zK3m",
+            required = true
+        )
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "302",
+            description = "Redirect to original URL"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Short code not found",
+            content = @Content(mediaType = MediaType.TEXT_PLAIN_VALUE)
+        )
+    })
     @GetMapping("/{shortCode:[a-zA-Z0-9]+}")
-    public ResponseEntity<?> redirect(@PathVariable String shortCode) {
+    public ResponseEntity<?> redirect(
+            @PathVariable
+            @Parameter(description = "Short code (alphanumeric, 7 characters)", example = "xY7zK3m")
+            String shortCode) {
 
         Optional<Url> urlOptional = urlShortenerService.getOriginalUrl(shortCode);
 
-        // If URL not found, return 404 error
         if (urlOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("URL not found for short code: " + shortCode);
@@ -77,32 +115,47 @@ public class UrlShortenerController {
         Url url = urlOptional.get();
         urlShortenerService.incrementAccessCount(shortCode);
 
-        // Redirect to the original URL
-        RedirectView redirectView = new RedirectView();
-        redirectView.setUrl(url.getLongUrl());
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(java.net.URI.create(url.getLongUrl()))
                 .build();
     }
 
-    /**
-     * Endpoint to get statistics about a shortened URL
-     *
-     * GET /api/stats/{shortCode}
-     * Example: GET /api/stats/abc123
-     * Response: {"shortCode": "abc123", "longUrl": "...", "accessCount": 42, ...}
-     *
-     * This allows users to see how many times their short URL has been accessed.
-     *
-     * @param shortCode The short code to get stats for
-     * @return Statistics about the URL or 404 if not found
-     */
+    @Operation(
+        summary = "Get URL statistics",
+        description = "Returns detailed statistics for a shortened URL including access count and creation time.",
+        parameters = @Parameter(
+            name = "shortCode",
+            description = "The short code to get statistics for",
+            example = "xY7zK3m",
+            required = true
+        )
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = UrlStatsResponse.class),
+                examples = @ExampleObject(
+                    value = "{\"shortCode\":\"xY7zK3m\",\"longUrl\":\"https://www.example.com\",\"shortUrl\":\"http://localhost:8081/xY7zK3m\",\"createdAt\":\"2026-02-07T19:30:00\",\"accessCount\":42}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Short code not found",
+            content = @Content(mediaType = MediaType.TEXT_PLAIN_VALUE)
+        )
+    })
     @GetMapping("/api/stats/{shortCode}")
-    public ResponseEntity<?> getStats(@PathVariable String shortCode) {
+    public ResponseEntity<?> getStats(
+            @PathVariable
+            @Parameter(description = "Short code to get statistics for", example = "xY7zK3m")
+            String shortCode) {
 
         Optional<Url> urlOptional = urlShortenerService.getOriginalUrl(shortCode);
 
-        // If URL not found, return 404 error
         if (urlOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("URL not found for short code: " + shortCode);
@@ -121,20 +174,23 @@ public class UrlShortenerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint to get domain metrics - top 3 domains that have been shortened the most
-     *
-     * GET /api/metrics/domains
-     * Response: [
-     *   {"domain": "udemy.com", "count": 6},
-     *   {"domain": "youtube.com", "count": 4},
-     *   {"domain": "wikipedia.org", "count": 2}
-     * ]
-     *
-     * This returns the top 3 domain names that have been shortened the most number of times.
-     *
-     * @return List of top 3 domains with their counts
-     */
+    @Operation(
+        summary = "Get top 3 domains",
+        description = "Returns the top 3 domain names that have been shortened the most number of times. Useful for analytics and understanding usage patterns."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Domain metrics retrieved successfully",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = DomainMetrics.class),
+                examples = @ExampleObject(
+                    value = "[{\"domain\":\"udemy.com\",\"count\":6},{\"domain\":\"youtube.com\",\"count\":4},{\"domain\":\"wikipedia.org\",\"count\":2}]"
+                )
+            )
+        )
+    })
     @GetMapping("/api/metrics/domains")
     public ResponseEntity<List<DomainMetrics>> getTopDomains() {
         List<DomainMetrics> topDomains = urlShortenerService.getTop3Domains();
