@@ -6,23 +6,34 @@ import com.yk.url_shortener.repository.UrlRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestPropertySource(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.datasource.url=jdbc:h2:mem:testdb",
+    "spring.datasource.driver-class-name=org.h2.Driver"
+})
 class UrlShortenerServiceTest {
 
     private UrlShortenerService urlShortenerService;
+
+    @Autowired
     private UrlRepository urlRepository;
 
     @BeforeEach
     void setUp() {
-
-        urlRepository = new UrlRepository();
+        urlRepository.deleteAll(); // Clean database before each test
         urlShortenerService = new UrlShortenerService(urlRepository);
     }
+
+    // ...existing code...
 
     @Test
     @DisplayName("Test 1: Should shorten URL and return valid short code")
