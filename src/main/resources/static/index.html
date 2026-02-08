@@ -396,7 +396,8 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:8081';
+        // Use the current host for API calls (works on both localhost and Render)
+        const API_BASE_URL = window.location.origin;
 
         // Handle form submission
         document.getElementById('shortenForm').addEventListener('submit', async (e) => {
