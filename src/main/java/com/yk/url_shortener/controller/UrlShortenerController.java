@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -64,14 +65,18 @@ public class UrlShortenerController {
                     )
                 )
             )
-            @Valid @RequestBody ShortenUrlRequest request) {
+            @Valid @RequestBody ShortenUrlRequest request,
+            HttpServletRequest httpRequest) {
 
         Url url = urlShortenerService.shortenUrl(request.getUrl());
+
+        // Build base URL from the actual request (works on any domain)
+        String baseUrl = getBaseUrl(httpRequest);
 
         ShortenUrlResponse response = ShortenUrlResponse.builder()
                 .longUrl(url.getLongUrl())
                 .shortCode(url.getShortCode())
-                .shortUrl(urlShortenerService.buildShortUrl(url.getShortCode()))
+                .shortUrl(baseUrl + "/" + url.getShortCode())
                 .createdAt(url.getCreatedAt())
                 .build();
 
@@ -152,7 +157,8 @@ public class UrlShortenerController {
     public ResponseEntity<?> getStats(
             @PathVariable
             @Parameter(description = "Short code to get statistics for", example = "xY7zK3m")
-            String shortCode) {
+            String shortCode,
+            HttpServletRequest httpRequest) {
 
         Optional<Url> urlOptional = urlShortenerService.getOriginalUrl(shortCode);
 
@@ -163,10 +169,13 @@ public class UrlShortenerController {
 
         Url url = urlOptional.get();
 
+        // Build base URL from the actual request
+        String baseUrl = getBaseUrl(httpRequest);
+
         UrlStatsResponse response = UrlStatsResponse.builder()
                 .shortCode(url.getShortCode())
                 .longUrl(url.getLongUrl())
-                .shortUrl(urlShortenerService.buildShortUrl(url.getShortCode()))
+                .shortUrl(baseUrl + "/" + url.getShortCode())
                 .createdAt(url.getCreatedAt())
                 .accessCount(url.getAccessCount())
                 .build();
@@ -195,5 +204,32 @@ public class UrlShortenerController {
     public ResponseEntity<List<DomainMetrics>> getTopDomains() {
         List<DomainMetrics> topDomains = urlShortenerService.getTop3Domains();
         return ResponseEntity.ok(topDomains);
+    }
+
+    /**
+     * Helper method to build the base URL from the HTTP request
+     * This makes the short URLs work on any domain (localhost, Render, etc.)
+     *
+     * Examples:
+     * - Local: http://localhost:8081
+     * - Render: https://url-shortener-0l0j.onrender.com
+     * - Custom domain: https://short.yourdomain.com
+     */
+    private String getBaseUrl(HttpServletRequest request) {
+        String scheme = request.getScheme();             // http or https
+        String serverName = request.getServerName();     // hostname
+        int serverPort = request.getServerPort();        // port
+
+        // Build base URL
+        StringBuilder baseUrl = new StringBuilder();
+        baseUrl.append(scheme).append("://").append(serverName);
+
+        // Only add port if it's not the default port for the scheme
+        if ((scheme.equals("http") && serverPort != 80) ||
+            (scheme.equals("https") && serverPort != 443)) {
+            baseUrl.append(":").append(serverPort);
+        }
+
+        return baseUrl.toString();
     }
 }
