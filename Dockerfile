@@ -10,7 +10,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8082
-ENV SERVER_PORT=8082 \
-    APP_BASE_URL=http://localhost:8082
+EXPOSE 8081
+ENV SERVER_PORT=8081 \
+    APP_BASE_URL=http://localhost:8081
 ENTRYPOINT ["java", "-jar", "app.jar"]
