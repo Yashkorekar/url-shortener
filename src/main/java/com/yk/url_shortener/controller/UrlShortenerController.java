@@ -27,6 +27,7 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 @Tag(name = "URL Shortener", description = "APIs for URL shortening, redirection, and analytics")
 public class UrlShortenerController {
 
