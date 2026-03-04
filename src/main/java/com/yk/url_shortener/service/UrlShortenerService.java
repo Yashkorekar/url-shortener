@@ -46,18 +46,6 @@ public class UrlShortenerService {
     /**
      * Shorten a long URL
      *
-     * Algorithm:
-     * 1. Check if this URL has already been shortened - if yes, return existing short code
-     * 2. Generate a unique short code using hash-based approach
-     * 3. If collision occurs (very rare), try again with modified input
-     * 4. Save the mapping and return
-     *
-     * @param longUrl The long URL to shorten
-     * @return The created or existing Url object
-     */
-    /**
-     * Shorten a long URL
-     *
      * Cache behaviour:
      * - @CachePut("urls"): After saving, put the result into the "urls" cache keyed by shortCode
      * - @CacheEvict("domains"): Evict the domains cache since a new URL changes domain counts
@@ -210,25 +198,6 @@ public class UrlShortenerService {
         }
     }
 
-    /**
-     * Get top 3 domains that have been shortened the most
-     *
-     * Algorithm:
-     * 1. Get all URLs from repository
-     * 2. Extract domain from each URL
-     * 3. Count occurrences of each domain
-     * 4. Sort by count in descending order
-     * 5. Take top 3
-     *
-     * Example output:
-     * [
-     *   { "domain": "udemy.com", "count": 6 },
-     *   { "domain": "youtube.com", "count": 4 },
-     *   { "domain": "wikipedia.org", "count": 2 }
-     * ]
-     *
-     * @return List of top 3 domains with their counts
-     */
     /**
      * Get top 3 domains that have been shortened the most
      *

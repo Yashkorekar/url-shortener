@@ -1,11 +1,58 @@
 services:
+
+  # ─────────────────────────────────────────────
+  # Redis — Caching & Rate Limiting
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: url-shortener-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    # AOF persistence — Redis data survives container restarts
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # URL Shortener App
+  # ─────────────────────────────────────────────
   url-shortener:
     build: .
-    image: url-shortener:latest
+    image: yashkorekar/url-shortener:latest
     container_name: url-shortener-app
     ports:
-      - "8082:8082"
+      - "8081:8081"
     environment:
-      SERVER_PORT: 8082
-      APP_BASE_URL: http://localhost:8082
+      # Server
+      SERVER_PORT: 8081
+      APP_BASE_URL: http://localhost:8081
+      # Redis — uses service name as hostname inside Docker network
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      # Rate limiting
+      RATE_LIMIT_MAX: 20
+      RATE_LIMIT_WINDOW: 60
+    depends_on:
+      redis:
+        condition: service_healthy   # wait until Redis passes healthcheck before app starts
     restart: unless-stopped
+    volumes:
+      # H2 database file persists on the host machine — data survives container rebuilds
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Named volumes
+volumes:
+  redis_data:
