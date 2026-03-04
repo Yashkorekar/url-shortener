@@ -4,7 +4,12 @@ import com.yk.url_shortener.dto.DomainMetrics;
 import com.yk.url_shortener.model.Url;
 import com.yk.url_shortener.repository.UrlRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -19,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UrlShortenerService {
@@ -49,6 +55,17 @@ public class UrlShortenerService {
      * @param longUrl The long URL to shorten
      * @return The created or existing Url object
      */
+    /**
+     * Shorten a long URL
+     *
+     * Cache behaviour:
+     * - @CachePut("urls"): After saving, put the result into the "urls" cache keyed by shortCode
+     * - @CacheEvict("domains"): Evict the domains cache since a new URL changes domain counts
+     */
+    @Caching(
+        put = @CachePut(value = "urls", key = "#result.shortCode"),
+        evict = @CacheEvict(value = "domains", allEntries = true)
+    )
     public Url shortenUrl(String longUrl) {
         // Check if URL already exists in our database
         Optional<Url> existingUrl = urlRepository.findByLongUrl(longUrl);
@@ -77,19 +94,26 @@ public class UrlShortenerService {
     /**
      * Get the original long URL from a short code
      *
-     * @param shortCode The short code to look up
-     * @return Optional containing the Url if found
+     * Cache behaviour:
+     * - @Cacheable("urls"): On first call → hits DB, stores in Redis for 1hr
+     *   On subsequent calls → returns from Redis, DB is NOT hit at all
+     *   This is the most impactful cache — every redirect goes through here
      */
+    @Cacheable(value = "urls", key = "#shortCode")
     public Optional<Url> getOriginalUrl(String shortCode) {
+        log.debug("Cache MISS for shortCode: {} — fetching from DB", shortCode);
         return urlRepository.findByShortCode(shortCode);
     }
 
     /**
      * Increment the access count for a URL
-     * This tracks how many times a short URL has been used
      *
-     * @param shortCode The short code to update
+     * Cache behaviour:
+     * - @CacheEvict("stats"): Evict the stats cache for this shortCode
+     *   because access count just changed — stale stats would be wrong
+     * - "urls" cache is NOT evicted — longUrl itself didn't change
      */
+    @CacheEvict(value = "stats", key = "#shortCode")
     public void incrementAccessCount(String shortCode) {
         urlRepository.findByShortCode(shortCode).ifPresent(url -> {
             url.setAccessCount(url.getAccessCount() + 1);
@@ -205,6 +229,15 @@ public class UrlShortenerService {
      *
      * @return List of top 3 domains with their counts
      */
+    /**
+     * Get top 3 domains that have been shortened the most
+     *
+     * Cache behaviour:
+     * - @Cacheable("domains"): Cache for 10 mins (configured in RedisConfig)
+     *   This queries ALL urls and aggregates — expensive without cache
+     *   Evicted automatically when a new URL is shortened (domain counts change)
+     */
+    @Cacheable(value = "domains", key = "'top3'")
     public List<DomainMetrics> getTop3Domains() {
         Collection<Url> allUrls = urlRepository.findAll();
 

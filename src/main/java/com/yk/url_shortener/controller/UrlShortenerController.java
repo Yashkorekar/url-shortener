@@ -4,7 +4,9 @@ import com.yk.url_shortener.dto.DomainMetrics;
 import com.yk.url_shortener.dto.ShortenUrlRequest;
 import com.yk.url_shortener.dto.ShortenUrlResponse;
 import com.yk.url_shortener.dto.UrlStatsResponse;
+import com.yk.url_shortener.exception.RateLimitExceededException;
 import com.yk.url_shortener.model.Url;
+import com.yk.url_shortener.service.RateLimiterService;
 import com.yk.url_shortener.service.UrlShortenerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +34,7 @@ import java.util.Optional;
 public class UrlShortenerController {
 
     private final UrlShortenerService urlShortenerService;
+    private final RateLimiterService rateLimiterService;
 
     @Operation(
         summary = "Shorten a URL",
@@ -69,6 +72,12 @@ public class UrlShortenerController {
             @Valid @RequestBody ShortenUrlRequest request,
             HttpServletRequest httpRequest) {
 
+        // Rate limiting — block abusive IPs
+        String clientIp = getClientIp(httpRequest);
+        if (!rateLimiterService.isAllowed(clientIp)) {
+            throw new RateLimitExceededException(clientIp);
+        }
+
         Url url = urlShortenerService.shortenUrl(request.getUrl());
 
         // Build base URL from the actual request (works on any domain)
@@ -81,7 +90,9 @@ public class UrlShortenerController {
                 .createdAt(url.getCreatedAt())
                 .build();
 
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .header("X-RateLimit-Remaining", String.valueOf(rateLimiterService.getRemainingRequests(clientIp)))
+                .body(response);
     }
 
     @Operation(
@@ -208,24 +219,31 @@ public class UrlShortenerController {
     }
 
     /**
+     * Extract client real IP address.
+     * Checks X-Forwarded-For header first (set by reverse proxies / load balancers like Nginx, Render).
+     * Falls back to direct remote address for local development.
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            // X-Forwarded-For can be a comma-separated list; first IP is the real client
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
+
+    /**
      * Helper method to build the base URL from the HTTP request
      * This makes the short URLs work on any domain (localhost, Render, etc.)
-     *
-     * Examples:
-     * - Local: http://localhost:8081
-     * - Render: https://url-shortener-0l0j.onrender.com
-     * - Custom domain: https://short.yourdomain.com
      */
     private String getBaseUrl(HttpServletRequest request) {
-        String scheme = request.getScheme();             // http or https
-        String serverName = request.getServerName();     // hostname
-        int serverPort = request.getServerPort();        // port
+        String scheme = request.getScheme();
+        String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
 
-        // Build base URL
         StringBuilder baseUrl = new StringBuilder();
         baseUrl.append(scheme).append("://").append(serverName);
 
-        // Only add port if it's not the default port for the scheme
         if ((scheme.equals("http") && serverPort != 80) ||
             (scheme.equals("https") && serverPort != 443)) {
             baseUrl.append(":").append(serverPort);
