@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,8 +24,9 @@ class UrlShortenerServiceTest {
 
     @BeforeEach
     void setUp() {
-        urlRepository.deleteAll(); // Clean database before each test
-        urlShortenerService = new UrlShortenerService(urlRepository);
+        urlRepository.deleteAll();
+        // Pass Optional.empty() — tests don't need Kafka at all
+        urlShortenerService = new UrlShortenerService(urlRepository, Optional.empty());
     }
 
     // ...existing code...

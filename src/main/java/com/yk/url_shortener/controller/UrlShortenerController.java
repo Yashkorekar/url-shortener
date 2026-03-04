@@ -3,10 +3,12 @@ package com.yk.url_shortener.controller;
 import com.yk.url_shortener.dto.DomainMetrics;
 import com.yk.url_shortener.dto.ShortenUrlRequest;
 import com.yk.url_shortener.dto.ShortenUrlResponse;
+import com.yk.url_shortener.dto.UrlAccessedEvent;
 import com.yk.url_shortener.dto.UrlStatsResponse;
 import com.yk.url_shortener.exception.RateLimitExceededException;
 import com.yk.url_shortener.model.Url;
 import com.yk.url_shortener.service.RateLimiterService;
+import com.yk.url_shortener.service.UrlEventProducer;
 import com.yk.url_shortener.service.UrlShortenerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,6 +37,8 @@ public class UrlShortenerController {
 
     private final UrlShortenerService urlShortenerService;
     private final RateLimiterService rateLimiterService;
+    // Optional — not present when spring.kafka.enabled=false
+    private final Optional<UrlEventProducer> urlEventProducer;
 
     @Operation(
         summary = "Shorten a URL",
@@ -120,7 +124,8 @@ public class UrlShortenerController {
     public ResponseEntity<?> redirect(
             @PathVariable
             @Parameter(description = "Short code (alphanumeric, 7 characters)", example = "xY7zK3m")
-            String shortCode) {
+            String shortCode,
+            HttpServletRequest request) {
 
         Optional<Url> urlOptional = urlShortenerService.getOriginalUrl(shortCode);
 
@@ -130,7 +135,18 @@ public class UrlShortenerController {
         }
 
         Url url = urlOptional.get();
-        urlShortenerService.incrementAccessCount(shortCode);
+
+        // When Kafka is enabled: publish async event → consumer updates access count in background
+        // When Kafka is disabled: update access count synchronously (direct DB write)
+        urlEventProducer.ifPresentOrElse(
+            producer -> producer.publishUrlAccessed(UrlAccessedEvent.builder()
+                    .shortCode(shortCode)
+                    .longUrl(url.getLongUrl())
+                    .accessedAt(java.time.LocalDateTime.now())
+                    .clientIp(getClientIp(request))
+                    .build()),
+            () -> urlShortenerService.incrementAccessCount(shortCode)
+        );
 
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(java.net.URI.create(url.getLongUrl()))

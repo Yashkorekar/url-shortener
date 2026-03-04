@@ -1,9 +1,9 @@
 package com.yk.url_shortener.service;
 
 import com.yk.url_shortener.dto.DomainMetrics;
+import com.yk.url_shortener.dto.UrlCreatedEvent;
 import com.yk.url_shortener.model.Url;
 import com.yk.url_shortener.repository.UrlRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,10 +26,18 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UrlShortenerService {
 
     private final UrlRepository urlRepository;
+
+    // Optional — not present when spring.kafka.enabled=false
+    private final Optional<UrlEventProducer> urlEventProducer;
+
+    public UrlShortenerService(UrlRepository urlRepository,
+                               Optional<UrlEventProducer> urlEventProducer) {
+        this.urlRepository = urlRepository;
+        this.urlEventProducer = urlEventProducer;
+    }
 
     /**
      * Base URL for the application (e.g., "http://localhost:8081")
@@ -76,7 +84,17 @@ public class UrlShortenerService {
                 .accessCount(0L)
                 .build();
 
-        return urlRepository.save(url);
+        Url saved = urlRepository.save(url);
+
+        // Publish Kafka event — only when Kafka is enabled (producer bean present)
+        urlEventProducer.ifPresent(producer -> producer.publishUrlCreated(UrlCreatedEvent.builder()
+                .shortCode(saved.getShortCode())
+                .longUrl(saved.getLongUrl())
+                .shortUrl(baseUrl + "/" + saved.getShortCode())
+                .createdAt(saved.getCreatedAt())
+                .build()));
+
+        return saved;
     }
 
     /**

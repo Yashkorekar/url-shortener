@@ -43,7 +43,9 @@ ENV SERVER_PORT=8081 \
     REDIS_PORT=6379 \
     REDIS_PASSWORD="" \
     RATE_LIMIT_MAX=20 \
-    RATE_LIMIT_WINDOW=60
+    RATE_LIMIT_WINDOW=60 \
+    KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
+    KAFKA_ENABLED=false
 
 # JVM flags tuned for running inside a container:
 #   -XX:+UseContainerSupport   → JVM reads Docker memory limits, not host RAM
