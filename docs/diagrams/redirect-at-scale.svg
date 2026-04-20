@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">Redirect at scale architecture</title>
+  <desc id="desc">High-scale redirect path using CDN, load balancer, stateless app, Redis cache, Postgres, Kafka and analytics consumers.</desc>
+  <defs>
+    <style>
+      .title { font-family: Segoe UI, Arial, sans-serif; font-size: 28px; font-weight: 700; fill: #0f172a; }
+      .box { fill: #f8fafc; stroke: #1f2937; stroke-width: 2; rx: 18; ry: 18; }
+      .infra { fill: #ecfeff; stroke: #0891b2; stroke-width: 2; rx: 18; ry: 18; }
+      .data { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 18; ry: 18; }
+      .event { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 2; rx: 18; ry: 18; }
+      .text { font-family: Segoe UI, Arial, sans-serif; font-size: 22px; font-weight: 600; fill: #0f172a; }
+      .small { font-family: Segoe UI, Arial, sans-serif; font-size: 17px; fill: #334155; }
+      .arrow { stroke: #475569; stroke-width: 3; fill: none; }
+      .dash { stroke-dasharray: 10 8; }
+      .note { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 10 6; rx: 16; ry: 16; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#475569" />
+    </marker>
+  </defs>
+
+  <text class="title" x="40" y="48">Production redirect path at high scale</text>
+
+  <rect class="infra" x="60" y="200" width="170" height="90" />
+  <text class="text" x="145" y="238" text-anchor="middle">User</text>
+  <text class="small" x="145" y="266" text-anchor="middle">global traffic</text>
+
+  <rect class="infra" x="290" y="200" width="170" height="90" />
+  <text class="text" x="375" y="238" text-anchor="middle">CDN</text>
+  <text class="small" x="375" y="266" text-anchor="middle">edge caching</text>
+
+  <rect class="infra" x="520" y="200" width="210" height="90" />
+  <text class="text" x="625" y="238" text-anchor="middle">Load Balancer</text>
+  <text class="small" x="625" y="266" text-anchor="middle">fan-out to app fleet</text>
+
+  <rect class="box" x="790" y="200" width="220" height="90" />
+  <text class="text" x="900" y="238" text-anchor="middle">Stateless app</text>
+  <text class="small" x="900" y="266" text-anchor="middle">resolve short code fast</text>
+
+  <rect class="data" x="790" y="380" width="220" height="100" />
+  <text class="text" x="900" y="424" text-anchor="middle">Redis cache</text>
+  <text class="small" x="900" y="452" text-anchor="middle">hot short-code lookups</text>
+
+  <rect class="data" x="1090" y="380" width="220" height="100" />
+  <text class="text" x="1200" y="424" text-anchor="middle">Postgres</text>
+  <text class="small" x="1200" y="452" text-anchor="middle">source of truth</text>
+
+  <rect class="event" x="790" y="590" width="220" height="100" />
+  <text class="text" x="900" y="634" text-anchor="middle">Kafka</text>
+  <text class="small" x="900" y="662" text-anchor="middle">access events</text>
+
+  <rect class="event" x="1090" y="590" width="220" height="100" />
+  <text class="text" x="1200" y="634" text-anchor="middle">Analytics</text>
+  <text class="small" x="1200" y="662" text-anchor="middle">aggregation / reporting</text>
+
+  <rect class="note" x="80" y="540" width="620" height="140" />
+  <text class="text" x="390" y="580" text-anchor="middle">Key production idea</text>
+  <text class="small" x="390" y="612" text-anchor="middle">The redirect path should stay close to: cache lookup → redirect response.</text>
+  <text class="small" x="390" y="640" text-anchor="middle">Heavy analytics writes are pushed off the critical path and handled asynchronously.</text>
+
+  <line class="arrow" x1="230" y1="245" x2="290" y2="245" marker-end="url(#arrow)" />
+  <line class="arrow" x1="460" y1="245" x2="520" y2="245" marker-end="url(#arrow)" />
+  <line class="arrow" x1="730" y1="245" x2="790" y2="245" marker-end="url(#arrow)" />
+
+  <path class="arrow" d="M900 290 L900 380" marker-end="url(#arrow)" />
+  <path class="arrow dash" d="M1010 430 L1090 430" marker-end="url(#arrow)" />
+  <path class="arrow" d="M900 290 L900 590" marker-end="url(#arrow)" />
+  <path class="arrow" d="M1010 640 L1090 640" marker-end="url(#arrow)" />
+  <path class="arrow" d="M790 225 L625 225 L625 320 L145 320 L145 290" marker-end="url(#arrow)" />
+
+  <text class="small" x="838" y="342">cache-first lookup</text>
+  <text class="small" x="1040" y="414">DB only on miss</text>
+  <text class="small" x="940" y="560">async event emit</text>
+  <text class="small" x="360" y="340">302 redirect returned to user</text>
+</svg>

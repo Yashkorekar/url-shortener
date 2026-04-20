@@ -5,7 +5,7 @@ A production-ready REST API service that shortens long URLs. Built with Spring B
 ## ✨ Features
 
 - ✅ Shorten long URLs into 7-character codes
-- ✅ Redirect short URLs to original URLs  
+- ✅ Redirect short URLs to original URLs
 - ✅ Track click statistics and access counts
 - ✅ View top 3 most shortened domains
 - ✅ Beautiful responsive web interface

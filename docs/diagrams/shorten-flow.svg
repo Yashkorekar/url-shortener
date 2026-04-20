@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900" role="img" aria-labelledby="title desc">
+  <title id="title">Shorten URL request flow</title>
+  <desc id="desc">Sequence diagram for POST /api/shorten showing client, controller, rate limiter, service, database, cache and Kafka interactions.</desc>
+  <defs>
+    <style>
+      .title { font-family: Segoe UI, Arial, sans-serif; font-size: 28px; font-weight: 700; fill: #0f172a; }
+      .lane { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; rx: 14; ry: 14; }
+      .life { stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 8 8; }
+      .txt { font-family: Segoe UI, Arial, sans-serif; font-size: 18px; fill: #0f172a; font-weight: 600; }
+      .small { font-family: Segoe UI, Arial, sans-serif; font-size: 16px; fill: #334155; }
+      .msg { stroke: #2563eb; stroke-width: 3; fill: none; }
+      .ret { stroke: #64748b; stroke-width: 2.5; fill: none; stroke-dasharray: 8 6; }
+      .note { fill: #eff6ff; stroke: #60a5fa; stroke-width: 2; rx: 12; ry: 12; }
+      .alt { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 10 6; rx: 14; ry: 14; }
+      .label { font-family: Segoe UI, Arial, sans-serif; font-size: 17px; fill: #1e293b; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#2563eb" />
+    </marker>
+    <marker id="arrowGray" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <text class="title" x="40" y="48">POST /api/shorten — runtime flow</text>
+
+  <g>
+    <rect class="lane" x="40" y="80" width="150" height="60" />
+    <text class="txt" x="115" y="115" text-anchor="middle">Client</text>
+    <line class="life" x1="115" y1="140" x2="115" y2="840" />
+
+    <rect class="lane" x="230" y="80" width="210" height="60" />
+    <text class="txt" x="335" y="110" text-anchor="middle">UrlShortener</text>
+    <text class="small" x="335" y="132" text-anchor="middle">Controller</text>
+    <line class="life" x1="335" y1="140" x2="335" y2="840" />
+
+    <rect class="lane" x="480" y="80" width="200" height="60" />
+    <text class="txt" x="580" y="110" text-anchor="middle">RateLimiter</text>
+    <text class="small" x="580" y="132" text-anchor="middle">Redis backed</text>
+    <line class="life" x1="580" y1="140" x2="580" y2="840" />
+
+    <rect class="lane" x="720" y="80" width="210" height="60" />
+    <text class="txt" x="825" y="110" text-anchor="middle">UrlShortener</text>
+    <text class="small" x="825" y="132" text-anchor="middle">Service</text>
+    <line class="life" x1="825" y1="140" x2="825" y2="840" />
+
+    <rect class="lane" x="970" y="80" width="180" height="60" />
+    <text class="txt" x="1060" y="110" text-anchor="middle">H2 / JPA</text>
+    <text class="small" x="1060" y="132" text-anchor="middle">Repository + DB</text>
+    <line class="life" x1="1060" y1="140" x2="1060" y2="840" />
+
+    <rect class="lane" x="1190" y="80" width="150" height="60" />
+    <text class="txt" x="1265" y="115" text-anchor="middle">Redis Cache</text>
+    <line class="life" x1="1265" y1="140" x2="1265" y2="840" />
+
+    <rect class="lane" x="1360" y="80" width="110" height="60" />
+    <text class="txt" x="1415" y="115" text-anchor="middle">Kafka</text>
+    <line class="life" x1="1415" y1="140" x2="1415" y2="840" />
+  </g>
+
+  <line class="msg" x1="115" y1="190" x2="335" y2="190" marker-end="url(#arrow)" />
+  <text class="label" x="225" y="180" text-anchor="middle">1. POST /api/shorten {url}</text>
+
+  <line class="msg" x1="335" y1="240" x2="580" y2="240" marker-end="url(#arrow)" />
+  <text class="label" x="457" y="230" text-anchor="middle">2. isAllowed(clientIp)</text>
+  <line class="ret" x1="580" y1="270" x2="335" y2="270" marker-end="url(#arrowGray)" />
+  <text class="label" x="457" y="262" text-anchor="middle">3. true / false</text>
+
+  <rect class="alt" x="250" y="300" width="1180" height="410" />
+  <text class="txt" x="275" y="326">Allowed branch</text>
+
+  <line class="msg" x1="335" y1="360" x2="825" y2="360" marker-end="url(#arrow)" />
+  <text class="label" x="580" y="350" text-anchor="middle">4. shortenUrl(longUrl)</text>
+
+  <line class="msg" x1="825" y1="405" x2="1060" y2="405" marker-end="url(#arrow)" />
+  <text class="label" x="942" y="395" text-anchor="middle">5. findByLongUrl</text>
+  <line class="ret" x1="1060" y1="435" x2="825" y2="435" marker-end="url(#arrowGray)" />
+  <text class="label" x="942" y="427" text-anchor="middle">6. existing Url or none</text>
+
+  <rect class="note" x="860" y="460" width="300" height="84" />
+  <text class="txt" x="1010" y="492" text-anchor="middle">If URL already exists</text>
+  <text class="small" x="1010" y="520" text-anchor="middle">service returns existing entity,</text>
+  <text class="small" x="1010" y="542" text-anchor="middle">avoiding duplicate rows</text>
+
+  <rect class="note" x="700" y="565" width="360" height="112" />
+  <text class="txt" x="880" y="597" text-anchor="middle">If URL is new</text>
+  <text class="small" x="880" y="625" text-anchor="middle">7. generate short code + collision check</text>
+  <text class="small" x="880" y="649" text-anchor="middle">8. save Url via repository / DB</text>
+
+  <line class="msg" x1="825" y1="610" x2="1060" y2="610" marker-end="url(#arrow)" />
+  <text class="label" x="942" y="600" text-anchor="middle">save(Url)</text>
+  <line class="ret" x1="1060" y1="640" x2="825" y2="640" marker-end="url(#arrowGray)" />
+  <text class="label" x="942" y="632" text-anchor="middle">saved Url</text>
+
+  <line class="msg" x1="825" y1="690" x2="1265" y2="690" marker-end="url(#arrow)" />
+  <text class="label" x="1045" y="680" text-anchor="middle">9. cache urls[shortCode] + evict top-domain cache</text>
+
+  <line class="msg" x1="825" y1="735" x2="1415" y2="735" marker-end="url(#arrow)" />
+  <text class="label" x="1120" y="725" text-anchor="middle">10. publish url.created (if Kafka enabled)</text>
+
+  <line class="ret" x1="825" y1="780" x2="335" y2="780" marker-end="url(#arrowGray)" />
+  <text class="label" x="580" y="772" text-anchor="middle">11. return Url</text>
+  <line class="ret" x1="335" y1="820" x2="115" y2="820" marker-end="url(#arrowGray)" />
+  <text class="label" x="225" y="812" text-anchor="middle">12. 201 Created + short URL response</text>
+
+  <rect class="note" x="245" y="730" width="300" height="74" />
+  <text class="small" x="395" y="760" text-anchor="middle">If rate limited, controller returns 429</text>
+  <text class="small" x="395" y="784" text-anchor="middle">before calling the service.</text>
+</svg>

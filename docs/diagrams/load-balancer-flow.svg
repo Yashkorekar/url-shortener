@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="720" viewBox="0 0 1320 720" role="img" aria-labelledby="title desc">
+  <title id="title">Load balancer redirect flow</title>
+  <desc id="desc">User request is routed through load balancer to an app instance which checks Redis, falls back to Postgres, and returns a redirect.</desc>
+  <defs>
+    <style>
+      .title { font-family: Segoe UI, Arial, sans-serif; font-size: 28px; font-weight: 700; fill: #0f172a; }
+      .box { fill: #f8fafc; stroke: #1f2937; stroke-width: 2; rx: 18; ry: 18; }
+      .infra { fill: #ecfeff; stroke: #0891b2; stroke-width: 2; rx: 18; ry: 18; }
+      .data { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 18; ry: 18; }
+      .note { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 10 6; rx: 16; ry: 16; }
+      .text { font-family: Segoe UI, Arial, sans-serif; font-size: 22px; font-weight: 600; fill: #0f172a; }
+      .small { font-family: Segoe UI, Arial, sans-serif; font-size: 17px; fill: #334155; }
+      .arrow { stroke: #475569; stroke-width: 3; fill: none; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#475569" />
+    </marker>
+  </defs>
+
+  <text class="title" x="40" y="48">Request flow with a load balancer</text>
+
+  <rect class="infra" x="70" y="140" width="180" height="90" />
+  <text class="text" x="160" y="178" text-anchor="middle">User</text>
+  <text class="small" x="160" y="206" text-anchor="middle">GET /abc1234</text>
+
+  <rect class="infra" x="350" y="140" width="240" height="90" />
+  <text class="text" x="470" y="178" text-anchor="middle">Load Balancer</text>
+  <text class="small" x="470" y="206" text-anchor="middle">routes to a healthy node</text>
+
+  <rect class="box" x="700" y="80" width="200" height="90" />
+  <text class="text" x="800" y="118" text-anchor="middle">App 1</text>
+  <text class="small" x="800" y="146" text-anchor="middle">idle / healthy</text>
+
+  <rect class="box" x="700" y="210" width="200" height="90" />
+  <text class="text" x="800" y="248" text-anchor="middle">App 2</text>
+  <text class="small" x="800" y="276" text-anchor="middle">selected for request</text>
+
+  <rect class="box" x="700" y="340" width="200" height="90" />
+  <text class="text" x="800" y="378" text-anchor="middle">App N</text>
+  <text class="small" x="800" y="406" text-anchor="middle">other replicas</text>
+
+  <rect class="data" x="1000" y="190" width="200" height="90" />
+  <text class="text" x="1100" y="228" text-anchor="middle">Redis</text>
+  <text class="small" x="1100" y="256" text-anchor="middle">cache lookup first</text>
+
+  <rect class="data" x="1000" y="360" width="200" height="90" />
+  <text class="text" x="1100" y="398" text-anchor="middle">PostgreSQL</text>
+  <text class="small" x="1100" y="426" text-anchor="middle">fallback on cache miss</text>
+
+  <rect class="note" x="290" y="520" width="910" height="130" />
+  <text class="text" x="745" y="560" text-anchor="middle">Why this matters</text>
+  <text class="small" x="745" y="592" text-anchor="middle">The load balancer lets you add more stateless app instances without changing clients.</text>
+  <text class="small" x="745" y="620" text-anchor="middle">Redis absorbs hot reads; Postgres is used mainly when the cache misses.</text>
+
+  <line class="arrow" x1="250" y1="185" x2="350" y2="185" marker-end="url(#arrow)" />
+  <line class="arrow" x1="590" y1="185" x2="700" y2="255" marker-end="url(#arrow)" />
+  <line class="arrow" x1="900" y1="255" x2="1000" y2="235" marker-end="url(#arrow)" />
+  <path class="arrow" d="M1100 280 L1100 320 L900 320 L900 255" marker-end="url(#arrow)" />
+  <line class="arrow" x1="900" y1="320" x2="1000" y2="405" marker-end="url(#arrow)" />
+  <line class="arrow" x1="1000" y1="405" x2="900" y2="405" marker-end="url(#arrow)" />
+  <path class="arrow" d="M800 300 L800 460 L470 460 L470 230" marker-end="url(#arrow)" />
+  <path class="arrow" d="M470 230 L470 300 L160 300 L160 230" marker-end="url(#arrow)" />
+
+  <text class="small" x="710" y="472">302 redirect response</text>
+  <text class="small" x="930" y="182">cache hit fast path</text>
+  <text class="small" x="940" y="346">cache miss fallback</text>
+</svg>

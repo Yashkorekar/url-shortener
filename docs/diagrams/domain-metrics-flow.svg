@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Top domains metrics flow</title>
+  <desc id="desc">Flow diagram for GET /api/metrics/domains showing cache-first retrieval and DB scan fallback.</desc>
+  <defs>
+    <style>
+      .title { font-family: Segoe UI, Arial, sans-serif; font-size: 28px; font-weight: 700; fill: #0f172a; }
+      .box { fill: #f8fafc; stroke: #1f2937; stroke-width: 2; rx: 18; ry: 18; }
+      .cache { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 18; ry: 18; }
+      .db { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2; rx: 18; ry: 18; }
+      .note { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 10 6; rx: 16; ry: 16; }
+      .text { font-family: Segoe UI, Arial, sans-serif; font-size: 22px; font-weight: 600; fill: #0f172a; }
+      .small { font-family: Segoe UI, Arial, sans-serif; font-size: 18px; fill: #334155; }
+      .arrow { stroke: #475569; stroke-width: 3; fill: none; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#475569" />
+    </marker>
+  </defs>
+
+  <text class="title" x="40" y="48">GET /api/metrics/domains — top domains flow</text>
+
+  <rect class="box" x="60" y="120" width="210" height="90" />
+  <text class="text" x="165" y="160" text-anchor="middle">Client</text>
+  <text class="small" x="165" y="188" text-anchor="middle">calls metrics API</text>
+
+  <rect class="box" x="350" y="120" width="260" height="90" />
+  <text class="text" x="480" y="160" text-anchor="middle">UrlShortenerController</text>
+  <text class="small" x="480" y="188" text-anchor="middle">delegates to service</text>
+
+  <rect class="box" x="690" y="120" width="240" height="90" />
+  <text class="text" x="810" y="160" text-anchor="middle">UrlShortenerService</text>
+  <text class="small" x="810" y="188" text-anchor="middle">getTop3Domains()</text>
+
+  <rect class="cache" x="520" y="320" width="260" height="100" />
+  <text class="text" x="650" y="364" text-anchor="middle">Redis cache</text>
+  <text class="small" x="650" y="392" text-anchor="middle">key: domains::top3</text>
+
+  <rect class="db" x="870" y="320" width="260" height="100" />
+  <text class="text" x="1000" y="364" text-anchor="middle">H2 / JPA DB</text>
+  <text class="small" x="1000" y="392" text-anchor="middle">findAll() then aggregate</text>
+
+  <rect class="note" x="410" y="490" width="710" height="150" />
+  <text class="text" x="765" y="530" text-anchor="middle">Behavior</text>
+  <text class="small" x="765" y="564" text-anchor="middle">1. Service checks Redis first for the cached top-3 domain list.</text>
+  <text class="small" x="765" y="592" text-anchor="middle">2. On cache miss, it loads all Url rows from H2, groups by hostname, sorts, and keeps top 3.</text>
+  <text class="small" x="765" y="620" text-anchor="middle">3. Result is cached for ~10 minutes to avoid repeated full scans.</text>
+
+  <line class="arrow" x1="270" y1="165" x2="350" y2="165" marker-end="url(#arrow)" />
+  <line class="arrow" x1="610" y1="165" x2="690" y2="165" marker-end="url(#arrow)" />
+  <path class="arrow" d="M810 210 L810 260 L650 260 L650 320" marker-end="url(#arrow)" />
+  <path class="arrow" d="M930 370 L1000 370" marker-end="url(#arrow)" />
+  <path class="arrow" d="M1000 320 L1000 250 L810 250 L810 210" marker-end="url(#arrow)" />
+  <path class="arrow" d="M650 420 L650 455 L810 455 L810 210" marker-end="url(#arrow)" />
+  <path class="arrow" d="M690 180 L165 180" marker-end="url(#arrow)" />
+
+  <text class="small" x="705" y="246">cache hit</text>
+  <text class="small" x="945" y="304">cache miss fallback</text>
+  <text class="small" x="275" y="206">HTTP 200 + top domain metrics response</text>
+</svg>

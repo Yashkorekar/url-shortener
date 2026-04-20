@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="760" viewBox="0 0 1300 760" role="img" aria-labelledby="title desc">
+  <title id="title">URL Shortener logical architecture</title>
+  <desc id="desc">Browser requests go to Spring controllers, then business services, JPA repository, and H2 database, with Redis rate limiting and caching, Kafka events, Swagger, and health endpoints.</desc>
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .box { fill: #f8fafc; stroke: #1f2937; stroke-width: 2; rx: 18; ry: 18; }
+      .store { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 22; ry: 22; }
+      .event { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 2; rx: 18; ry: 18; }
+      .ops { fill: #ecfeff; stroke: #0891b2; stroke-width: 2; rx: 18; ry: 18; }
+      .text { font-family: Segoe UI, Arial, sans-serif; font-size: 22px; fill: #111827; font-weight: 600; }
+      .small { font-family: Segoe UI, Arial, sans-serif; font-size: 18px; fill: #374151; }
+      .label { font-family: Segoe UI, Arial, sans-serif; font-size: 17px; fill: #334155; }
+      .arrow { stroke: #475569; stroke-width: 3; fill: none; }
+      .dashed { stroke-dasharray: 10 8; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#475569" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1300" height="760" />
+
+  <rect class="box" x="70" y="120" width="190" height="90" />
+  <text class="text" x="165" y="158" text-anchor="middle">Browser UI</text>
+  <text class="small" x="165" y="188" text-anchor="middle">or API Client</text>
+
+  <rect class="box" x="320" y="120" width="220" height="90" />
+  <text class="text" x="430" y="158" text-anchor="middle">Spring</text>
+  <text class="small" x="430" y="188" text-anchor="middle">Controllers</text>
+
+  <rect class="box" x="600" y="120" width="220" height="90" />
+  <text class="text" x="710" y="158" text-anchor="middle">Business</text>
+  <text class="small" x="710" y="188" text-anchor="middle">Services</text>
+
+  <rect class="box" x="880" y="120" width="220" height="90" />
+  <text class="text" x="990" y="158" text-anchor="middle">Spring Data</text>
+  <text class="small" x="990" y="188" text-anchor="middle">JPA Repository</text>
+
+  <rect class="store" x="910" y="300" width="160" height="100" />
+  <text class="text" x="990" y="345" text-anchor="middle">H2</text>
+  <text class="small" x="990" y="375" text-anchor="middle">File DB</text>
+
+  <rect class="ops" x="300" y="300" width="260" height="100" />
+  <text class="text" x="430" y="342" text-anchor="middle">Redis Rate Limiter</text>
+  <text class="small" x="430" y="372" text-anchor="middle">per-client abuse control</text>
+
+  <rect class="ops" x="590" y="300" width="240" height="100" />
+  <text class="text" x="710" y="342" text-anchor="middle">Redis Cache</text>
+  <text class="small" x="710" y="372" text-anchor="middle">URL + metrics caching</text>
+
+  <rect class="event" x="590" y="500" width="240" height="100" />
+  <text class="text" x="710" y="542" text-anchor="middle">Kafka Producer</text>
+  <text class="small" x="710" y="572" text-anchor="middle">publish create/access events</text>
+
+  <rect class="event" x="900" y="500" width="190" height="100" />
+  <text class="text" x="995" y="542" text-anchor="middle">Kafka Topics</text>
+  <text class="small" x="995" y="572" text-anchor="middle">event backbone</text>
+
+  <rect class="event" x="1070" y="640" width="180" height="80" />
+  <text class="text" x="1160" y="682" text-anchor="middle">Consumer</text>
+
+  <rect class="ops" x="70" y="500" width="210" height="90" />
+  <text class="text" x="175" y="538" text-anchor="middle">Swagger / OpenAPI</text>
+  <text class="small" x="175" y="568" text-anchor="middle">API documentation</text>
+
+  <rect class="ops" x="70" y="630" width="210" height="90" />
+  <text class="text" x="175" y="668" text-anchor="middle">Actuator / Health</text>
+  <text class="small" x="175" y="698" text-anchor="middle">ops + readiness checks</text>
+
+  <line class="arrow" x1="260" y1="165" x2="320" y2="165" marker-end="url(#arrow)" />
+  <line class="arrow" x1="540" y1="165" x2="600" y2="165" marker-end="url(#arrow)" />
+  <line class="arrow" x1="820" y1="165" x2="880" y2="165" marker-end="url(#arrow)" />
+  <line class="arrow" x1="990" y1="210" x2="990" y2="300" marker-end="url(#arrow)" />
+
+  <line class="arrow" x1="430" y1="210" x2="430" y2="300" marker-end="url(#arrow)" />
+  <line class="arrow" x1="710" y1="210" x2="710" y2="300" marker-end="url(#arrow)" />
+  <line class="arrow" x1="710" y1="210" x2="710" y2="500" marker-end="url(#arrow)" />
+  <line class="arrow" x1="830" y1="550" x2="900" y2="550" marker-end="url(#arrow)" />
+  <path class="arrow dashed" d="M995 600 L995 680 L1070 680" marker-end="url(#arrow)" />
+  <path class="arrow dashed" d="M1070 680 L1070 650 L710 650 L710 600" marker-end="url(#arrow)" />
+
+  <path class="arrow" d="M320 155 L175 155 L175 500" marker-end="url(#arrow)" />
+  <path class="arrow" d="M320 175 L140 175 L140 630" marker-end="url(#arrow)" />
+
+  <text class="label" x="775" y="462">create / access events</text>
+  <text class="label" x="1035" y="635">async processing</text>
+  <text class="label" x="350" y="270">rate limit checks</text>
+  <text class="label" x="620" y="270">read-through caching</text>
+</svg>
